@@ -296,72 +296,79 @@ impl App for M3UViewer {
                 return;
             }
             
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                ui.spacing_mut().item_spacing = Vec2::new(10.0, 10.0);
-                
-                // Exibir vídeos em grade
-                let available_width = ui.available_width();
-                let thumbnail_width = 320.0;
-                let thumbnail_height = 180.0;
-                let padding = 10.0;
-                let items_per_row = (available_width / (thumbnail_width + padding)).floor() as usize;
-                let items_per_row = items_per_row.max(1);
-                
-                let mut i = 0;
-                while i < self.filtered_videos.len() {
-                    ui.horizontal(|ui| {
-                        for j in 0..items_per_row {
-                            let idx = i + j;
-                            if idx >= self.filtered_videos.len() {
-                                break;
-                            }
-                            
-                            let video_idx = self.filtered_videos[idx];
-                            let video = &self.videos[video_idx];
-                            
-                            ui.vertical(|ui| {
-                                // Exibir thumbnail
-                                let (rect, _) = ui.allocate_exact_size(Vec2::new(thumbnail_width, thumbnail_height), Sense::click());
-                                
-                                if let Some(texture) = &video.texture {
-                                    ui.painter().image(
-                                        texture.id(),
-                                        rect,
-                                        egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
-                                        Color32::WHITE,
-                                    );
-                                } else {
-                                    // Placeholder enquanto a imagem não carrega
-                                    ui.painter().rect_filled(
-                                        rect,
-                                        0.0,
-                                        Color32::from_rgb(50, 50, 50),
-                                    );
+            // Adicionar margens laterais para centralizar o conteúdo
+            ui.spacing_mut().item_spacing = Vec2::new(10.0, 10.0);
+            let margin = 20.0; // Margem lateral
+            
+            egui::ScrollArea::vertical()
+                .auto_shrink([false; 2])  // Impede que a área de rolagem encolha
+                .show(ui, |ui| {
+                    // Adicionar margens laterais
+                    ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                        // Exibir vídeos em grade
+                        let available_width = ui.available_width() - (2.0 * margin);
+                        let thumbnail_width = 320.0;
+                        let thumbnail_height = 180.0;
+                        let padding = 10.0;
+                        let items_per_row = (available_width / (thumbnail_width + padding)).floor() as usize;
+                        let items_per_row = items_per_row.max(1);
+                        
+                        let mut i = 0;
+                        while i < self.filtered_videos.len() {
+                            ui.horizontal(|ui| {
+                                for j in 0..items_per_row {
+                                    let idx = i + j;
+                                    if idx >= self.filtered_videos.len() {
+                                        break;
+                                    }
                                     
-                                    ui.painter().text(
-                                        rect.center(),
-                                        egui::Align2::CENTER_CENTER,
-                                        "Carregando...",
-                                        egui::FontId::default(),
-                                        Color32::WHITE,
-                                    );
+                                    let video_idx = self.filtered_videos[idx];
+                                    let video = &self.videos[video_idx];
+                                    
+                                    ui.vertical(|ui| {
+                                        // Exibir thumbnail
+                                        let (rect, _) = ui.allocate_exact_size(Vec2::new(thumbnail_width, thumbnail_height), Sense::click());
+                                        
+                                        if let Some(texture) = &video.texture {
+                                            ui.painter().image(
+                                                texture.id(),
+                                                rect,
+                                                egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
+                                                Color32::WHITE,
+                                            );
+                                        } else {
+                                            // Placeholder enquanto a imagem não carrega
+                                            ui.painter().rect_filled(
+                                                rect,
+                                                0.0,
+                                                Color32::from_rgb(50, 50, 50),
+                                            );
+                                            
+                                            ui.painter().text(
+                                                rect.center(),
+                                                egui::Align2::CENTER_CENTER,
+                                                "Carregando...",
+                                                egui::FontId::default(),
+                                                Color32::WHITE,
+                                            );
+                                        }
+                                        
+                                        // Detectar clique na thumbnail
+                                        if ui.interact(rect, ui.id().with(idx), Sense::click()).clicked() {
+                                            self.play_video(idx);
+                                        }
+                                        
+                                        // Título do vídeo com quebra de linha
+                                        ui.set_max_width(thumbnail_width);
+                                        ui.label(&video.title);
+                                    });
                                 }
-                                
-                                // Detectar clique na thumbnail
-                                if ui.interact(rect, ui.id().with(idx), Sense::click()).clicked() {
-                                    self.play_video(idx);
-                                }
-                                
-                                // Título do vídeo com quebra de linha
-                                ui.set_max_width(thumbnail_width);
-                                ui.label(&video.title);
                             });
+                            
+                            i += items_per_row;
                         }
                     });
-                    
-                    i += items_per_row;
-                }
-            });
+                });
         });
     }
 }
