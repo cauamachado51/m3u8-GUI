@@ -54,9 +54,9 @@ fn open_m3u_file(&mut self, path: PathBuf) {
         
         while let Some(Ok(line)) = lines.next() {
             if line.starts_with("#EXTINF") {
-                // Extrair título da linha EXTINF
-                if let Some(title_part) = line.split(',').nth(1) {
-                    current_title = title_part.trim().to_string();
+                // Extrair título da linha EXTINF - pegar tudo após a primeira vírgula
+                if let Some(pos) = line.find(',') {
+                    current_title = line[pos + 1..].trim().to_string();
                 }
             } else if !line.starts_with("#") && !line.trim().is_empty() {
                 // Esta é uma linha de URL
