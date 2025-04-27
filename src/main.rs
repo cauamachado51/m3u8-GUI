@@ -39,50 +39,64 @@ impl M3UViewer {
         }
     }
 
-    // Função para abrir arquivo .m3u
-    fn open_m3u_file(&mut self, path: PathBuf) {
-        self.m3u_path = Some(path.clone());
-        self.videos.clear();
+// Função para abrir arquivo .m3u
+fn open_m3u_file(&mut self, path: PathBuf) {
+    self.m3u_path = Some(path.clone());
+    self.videos.clear();
+    
+    // Ler arquivo .m3u
+    if let Ok(file) = File::open(&path) {
+        let reader = io::BufReader::new(file);
+        let youtube_id_regex = Regex::new(r"(?:youtu\.be/|youtube\.com/(?:embed/|v/|watch\?v=|watch\?.+&v=))([^?&/]+)").unwrap();
         
-        // Ler arquivo .m3u
-        if let Ok(file) = File::open(&path) {
-            let reader = io::BufReader::new(file);
-            let youtube_id_regex = Regex::new(r"(?:youtu\.be/|youtube\.com/(?:embed/|v/|watch\?v=|watch\?.+&v=))([^?&/]+)").unwrap();
-            
-            for line in reader.lines() {
-                if let Ok(line) = line {
-                    if !line.starts_with("#") && !line.trim().is_empty() {
-                        // Extrair ID do vídeo da URL
-                        let id = if let Some(captures) = youtube_id_regex.captures(&line) {
-                            captures.get(1).unwrap().as_str().to_string()
-                        } else {
-                            // Gerar um ID baseado no hash da URL se não for do YouTube
-                            format!("{:x}", md5::compute(line.as_bytes()))
-                        };
-                        
-                        // Extrair título do vídeo (pode estar em uma linha de comentário anterior)
-                        let title = line.split('/').last().unwrap_or(&line).to_string();
-                        
-                        self.videos.push(VideoEntry {
-                            title,
-                            url: line,
-                            id: id.clone(),
-                            texture: None,
-                        });
-                        
-                        // Verificar se a thumbnail existe, caso contrário adicionar à lista de downloads
-                        let cache_path = format!("cache_m3u/{}.jpg", id);
-                        if !Path::new(&cache_path).exists() {
-                            self.pending_downloads.push(id);
-                        }
-                    }
+        let mut lines = reader.lines();
+        let mut current_title = String::new();
+        
+        while let Some(Ok(line)) = lines.next() {
+            if line.starts_with("#EXTINF") {
+                // Extrair título da linha EXTINF
+                if let Some(title_part) = line.split(',').nth(1) {
+                    current_title = title_part.trim().to_string();
                 }
+            } else if !line.starts_with("#") && !line.trim().is_empty() {
+                // Esta é uma linha de URL
+                // Extrair ID do vídeo da URL
+                let id = if let Some(captures) = youtube_id_regex.captures(&line) {
+                    captures.get(1).unwrap().as_str().to_string()
+                } else {
+                    // Gerar um ID baseado no hash da URL se não for do YouTube
+                    format!("{:x}", md5::compute(line.as_bytes()))
+                };
+                
+                // Usar o título extraído ou a URL como fallback
+                let title = if current_title.is_empty() {
+                    line.split('/').last().unwrap_or(&line).to_string()
+                } else {
+                    current_title.clone()
+                };
+                
+                self.videos.push(VideoEntry {
+                    title,
+                    url: line,
+                    id: id.clone(),
+                    texture: None,
+                });
+                
+                // Verificar se a thumbnail existe, caso contrário adicionar à lista de downloads
+                let cache_path = format!("cache_m3u/{}.jpg", id);
+                if !Path::new(&cache_path).exists() {
+                    self.pending_downloads.push(id);
+                }
+                
+                // Resetar o título atual para a próxima entrada
+                current_title = String::new();
             }
         }
-        
-        // Atualizar lista filtrada
-        self.update_filtered_videos();
     }
+    
+    // Atualizar lista filtrada
+    self.update_filtered_videos();
+}
     
     // Função para atualizar a lista filtrada com base na pesquisa
     fn update_filtered_videos(&mut self) {
@@ -338,7 +352,8 @@ impl App for M3UViewer {
                                     self.play_video(idx);
                                 }
                                 
-                                // Título do vídeo
+                                // Título do vídeo com quebra de linha
+                                ui.set_max_width(thumbnail_width);
                                 ui.label(&video.title);
                             });
                         }
