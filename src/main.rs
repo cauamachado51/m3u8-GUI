@@ -306,14 +306,13 @@ impl App for M3UViewer {
                     let available_width = ui.available_width();
                     let thumbnail_width = 320.0;
                     let thumbnail_height = 180.0;
-                    let spacing = 10.0;
                     
                     // Calcular quantos itens cabem por linha
-                    let items_per_row = ((available_width + spacing) / (thumbnail_width + spacing)).floor() as usize;
+                    let items_per_row = (available_width / thumbnail_width).floor() as usize;
                     let items_per_row = items_per_row.max(1);
                     
                     // Calcular largura total da linha
-                    let row_width = items_per_row as f32 * thumbnail_width + (items_per_row - 1) as f32 * spacing;
+                    let row_width = items_per_row as f32 * thumbnail_width;
                     
                     // Calcular margem para centralizar
                     let margin = (available_width - row_width) / 2.0;
@@ -371,10 +370,7 @@ impl App for M3UViewer {
                                     ui.label(&video.title);
                                 });
                                 
-                                // Adicionar espaçamento entre itens, exceto após o último
-                                if j < items_per_row - 1 && idx < self.filtered_videos.len() - 1 {
-                                    ui.add_space(spacing);
-                                }
+                                // Removido o espaçamento adicional entre itens
                             }
                         });
                         
