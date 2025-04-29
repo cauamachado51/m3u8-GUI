@@ -1,27 +1,13 @@
 ### adicionar suporte a configurações.
 no botão "opções" adicionar o botão "configurações", que ao apertar cria uma janela para as configurações, a esquerda deve ter abas e a direita as configurações da aba aberta. as configurações são guardadas em config.json
 
-### adicionar suporte a mutiseleção e opções.
-multiseleção: com o Control + Click Esquerdo do mouse (atalho configuravel [aba atalhos]) eu seleciono videos, o video deve ganhar uma marcação visual.
-opções: com o Click Direito (atalho configuravel), seja com vários videos selecionados ou nenhum (Click direto no alvo), abre um menu de contexto.
+### adicionar suporte a mutiseleção e abrir multiplos
+com o Control + Click Esquerdo do mouse eu seleciono videos, o video deve ganhar uma marcação visual. ao clicar para abrir, ele deve abrir todos colocando no mesmo temp.m3u.
 
-### concertar abrir
-ao clicar com o botão esquerdo cria um temp.m3u e abre com o app padrão, o problema é que insere apenas o link:
-```m3u
-<link do video>
-```
-deve ser tipo:
-```m3u
-#EXTM3U
-#EXTINF:-1, <nome do video 1>
-<link do video 1>
-#EXTINF:-1, <nome do video 2>
-<link do video 2>
-```
-### adicionar o recurso abrir multiplos
-no menu de contexto deve ter o botão "abrir", que cria o temp.m3u, só que com vários videos nele.
+### adicionar suporte a menu de contexto
+com o Click Direito, seja com vários videos selecionados ou nenhum (Click direto no alvo), abre um menu de contexto.
 
-### adicionar o recurso de tags e playlists.
+### adicionar o recurso de tags e playlists
 no menu de contexto ter o botão "editar", que sumona uma janela que contém os campos:
 ```plaintext
 <nome do video>

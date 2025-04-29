@@ -140,7 +140,10 @@ impl M3UViewer {
             if let Some(video) = self.videos.get(video_index) {
                 // Criar arquivo temporário .m3u
                 if let Ok(mut file) = File::create("temp.m3u") {
-                    if file.write_all(video.url.as_bytes()).is_ok() {
+                    // Escrever o cabeçalho e informações do vídeo no formato M3U correto
+                    let m3u_content = format!("#EXTM3U\n#EXTINF:-1, {}\n{}", video.title, video.url);
+                    
+                    if file.write_all(m3u_content.as_bytes()).is_ok() {
                         // Abrir com o aplicativo padrão
                         #[cfg(target_os = "windows")]
                         {
