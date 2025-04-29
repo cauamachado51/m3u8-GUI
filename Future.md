@@ -1,8 +1,14 @@
+### concertar visualização de botão
+os botões "Reproduzir Selecionados" e "Limpar Seleção" no menu/botão "opções" estão tendo quebra de linha, pois o menu em si tem uma largura muito pequena, é necessário colocar o quanto for preciso para os botões caberem, de acordo com quantos caracteres tem os botões, sem precisar editar manualmente, durante o compilamento ou inicialização do programa para não pesar no desempenho ao usar o app.
+
+### ajustar visualização da grade
+notei ao redimensionar a janela que a grade de videos é dinamica, isso é, ao diminuir o eixo X a grade se ajusta, isso é ótimo, no momento a grade não está usando toda a janela, quero faze-la ocupar tudo.
+
+### melhorar desempenho de inicialização
+quando inicializa ele verifica a existência de <id do video>.jpg na pasta cache_m3u, se não existir ele baixa, mas eu uso sempre o mesmo .m3u, então 99,9% das vezes não tem novas thumbnails para baixar, eu queria que a verficação fosse iniciada pelo botão "atualizar thumbnails", que ficaria no botão "opções" na barra superior. não tenho certeza, mas não descarto a possibilidade de talvez não melhorar o desempenho de inicialização por ainda precisar linkar todas as imagens na pasta cache_m3u na GUI.
+
 ### adicionar suporte a configurações.
 no botão "opções" adicionar o botão "configurações", que ao apertar cria uma janela para as configurações, a esquerda deve ter abas e a direita as configurações da aba aberta. as configurações são guardadas em config.json
-
-### adicionar suporte a mutiseleção e abrir multiplos
-com o Control + Click Esquerdo do mouse eu seleciono videos, o video deve ganhar uma marcação visual. ao clicar para abrir, ele deve abrir todos colocando no mesmo temp.m3u.
 
 ### adicionar suporte a menu de contexto
 com o Click Direito, seja com vários videos selecionados ou nenhum (Click direto no alvo), abre um menu de contexto.
@@ -41,6 +47,3 @@ ele deve me permitir adicionar multiplas playlists e tags, não deve obrigar a d
 }
 ```
 deve ter na Barra Superior ao lado do botão "opções" um botão "visualização", que abre uma janela de configuração própria, lá você pode selecionar qual playlist filtrar para só mostrar os videos dela, quais tags aparecem abaixo do titulo do video (valor incluso), também deve ter seleção de como é ordenado os videos, por ordem de inserção (é a atual, ordem em que processa o .m3u), ou por ordem alfabetica (titulo do video ou valor de X tag). também deve ter seleção de exibição em grade ou lista, na lista as thumbs ficam a esquerda e o nome do video e as tags a direita um abaixo do outro.
-
-### facilitar desenvolvimento
-nosso código está ficando grande, considere a possibilidade de maneiras de torna-lo mais facil de manter, como separar em arquivos menores por função. "async fn download_thumbnails" não é usado em nosso código, pode remover.

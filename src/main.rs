@@ -19,6 +19,7 @@ struct M3UViewer {
     videos: Vec<VideoEntry>,   // Lista de todos os vídeos carregados do arquivo M3U
     filtered_videos: Vec<usize>, // Índices dos vídeos que correspondem à pesquisa atual
     pending_downloads: Vec<String>, // IDs dos vídeos que precisam ter thumbnails baixadas
+    selected_videos: Vec<usize>,  // Índices dos vídeos selecionados pelo usuário
 }
 
 impl M3UViewer {
@@ -34,6 +35,7 @@ impl M3UViewer {
             videos: Vec::new(),
             filtered_videos: Vec::new(),
             pending_downloads: Vec::new(),
+            selected_videos: Vec::new(),
         }
     }
 
@@ -41,6 +43,7 @@ impl M3UViewer {
     fn open_m3u_file(&mut self, path: PathBuf) {
         self.m3u_path = Some(path.clone());
         self.videos.clear();
+        self.selected_videos.clear();
 
         // Ler arquivo .m3u
         if let Ok(file) = File::open(&path) {
@@ -134,37 +137,97 @@ impl M3UViewer {
         }
     }
 
-    // Função para reproduzir um vídeo
+    // Função para alternar a seleção de um vídeo
+    fn toggle_video_selection(&mut self, filtered_index: usize) {
+        if let Some(&video_index) = self.filtered_videos.get(filtered_index) {
+            if let Some(position) = self.selected_videos.iter().position(|&x| x == video_index) {
+                // Se já estiver selecionado, remova da seleção
+                self.selected_videos.remove(position);
+            } else {
+                // Caso contrário, adicione à seleção
+                self.selected_videos.push(video_index);
+            }
+        }
+    }
+
+    // Função para reproduzir vídeos selecionados
+    fn play_selected_videos(&self) {
+        if self.selected_videos.is_empty() {
+            // Se nenhum vídeo estiver selecionado, não faça nada
+            return;
+        }
+
+        // Criar arquivo temporário .m3u
+        if let Ok(mut file) = File::create("temp.m3u") {
+            // Escrever o cabeçalho M3U
+            let _ = file.write_all(b"#EXTM3U\n");
+            
+            // Adicionar cada vídeo selecionado ao arquivo
+            for &video_index in &self.selected_videos {
+                if let Some(video) = self.videos.get(video_index) {
+                    let entry = format!("#EXTINF:-1, {}\n{}\n", video.title, video.url);
+                    let _ = file.write_all(entry.as_bytes());
+                }
+            }
+            
+            // Abrir com o aplicativo padrão
+            #[cfg(target_os = "windows")]
+            {
+                Command::new("cmd")
+                    .args(&["/C", "start", "temp.m3u"])
+                    .spawn()
+                    .ok();
+            }
+
+            #[cfg(target_os = "linux")]
+            {
+                Command::new("xdg-open").arg("temp.m3u").spawn().ok();
+            }
+
+            #[cfg(target_os = "macos")]
+            {
+                Command::new("open").arg("temp.m3u").spawn().ok();
+            }
+        }
+    }
+
+    // Função para reproduzir um único vídeo (mantida para compatibilidade)
     fn play_video(&self, index: usize) {
-        if let Some(&video_index) = self.filtered_videos.get(index) {
-            if let Some(video) = self.videos.get(video_index) {
+        // Se não houver vídeos selecionados, selecione apenas este
+        if self.selected_videos.is_empty() {
+            if let Some(&video_index) = self.filtered_videos.get(index) {
                 // Criar arquivo temporário .m3u
                 if let Ok(mut file) = File::create("temp.m3u") {
                     // Escrever o cabeçalho e informações do vídeo no formato M3U correto
-                    let m3u_content = format!("#EXTM3U\n#EXTINF:-1, {}\n{}", video.title, video.url);
-                    
-                    if file.write_all(m3u_content.as_bytes()).is_ok() {
-                        // Abrir com o aplicativo padrão
-                        #[cfg(target_os = "windows")]
-                        {
-                            Command::new("cmd")
-                                .args(&["/C", "start", "temp.m3u"])
-                                .spawn()
-                                .ok();
-                        }
+                    if let Some(video) = self.videos.get(video_index) {
+                        let m3u_content = format!("#EXTM3U\n#EXTINF:-1, {}\n{}", video.title, video.url);
+                        
+                        if file.write_all(m3u_content.as_bytes()).is_ok() {
+                            // Abrir com o aplicativo padrão
+                            #[cfg(target_os = "windows")]
+                            {
+                                Command::new("cmd")
+                                    .args(&["/C", "start", "temp.m3u"])
+                                    .spawn()
+                                    .ok();
+                            }
 
-                        #[cfg(target_os = "linux")]
-                        {
-                            Command::new("xdg-open").arg("temp.m3u").spawn().ok();
-                        }
+                            #[cfg(target_os = "linux")]
+                            {
+                                Command::new("xdg-open").arg("temp.m3u").spawn().ok();
+                            }
 
-                        #[cfg(target_os = "macos")]
-                        {
-                            Command::new("open").arg("temp.m3u").spawn().ok();
+                            #[cfg(target_os = "macos")]
+                            {
+                                Command::new("open").arg("temp.m3u").spawn().ok();
+                            }
                         }
                     }
                 }
             }
+        } else {
+            // Se já houver vídeos selecionados, reproduza todos
+            self.play_selected_videos();
         }
     }
 }
@@ -226,6 +289,18 @@ impl App for M3UViewer {
                             ui.close_menu();
                         }
                     }
+                    
+                    if !self.selected_videos.is_empty() {
+                        if ui.button("Reproduzir Selecionados").clicked() {
+                            self.play_selected_videos();
+                            ui.close_menu();
+                        }
+                        
+                        if ui.button("Limpar Seleção").clicked() {
+                            self.selected_videos.clear();
+                            ui.close_menu();
+                        }
+                    }
                 });
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
@@ -280,7 +355,10 @@ impl App for M3UViewer {
                                 }
 
                                 let video_idx = self.filtered_videos[idx];
-                                let video = &self.videos[video_idx];
+                                // Obter apenas as informações necessárias do vídeo antes do closure
+                                let title = self.videos[video_idx].title.clone();
+                                let texture_option = self.videos[video_idx].texture.clone();
+                                let is_selected = self.selected_videos.contains(&video_idx);
 
                                 ui.vertical(|ui| {
                                     // Exibir thumbnail
@@ -289,7 +367,17 @@ impl App for M3UViewer {
                                         Sense::click(),
                                     );
 
-                                    if let Some(texture) = &video.texture {
+                                    // Desenhar borda de seleção se o vídeo estiver selecionado
+                                    if is_selected {
+                                        ui.painter().rect_stroke(
+                                            rect.expand(3.0),
+                                            0.0,
+                                            egui::Stroke::new(3.0, Color32::from_rgb(0, 120, 215)),
+                                            egui::StrokeKind::Outside,
+                                        );
+                                    }
+
+                                    if let Some(texture) = &texture_option {
                                         ui.painter().image(
                                             texture.id(),
                                             rect,
@@ -317,16 +405,27 @@ impl App for M3UViewer {
                                     }
 
                                     // Detectar clique na thumbnail
-                                    if ui
-                                        .interact(rect, ui.id().with(idx), Sense::click())
-                                        .clicked()
-                                    {
-                                        self.play_video(idx);
+                                    let response = ui.interact(rect, ui.id().with(idx), Sense::click());
+                                    
+                                    // Verificar se Ctrl está pressionado
+                                    let ctrl_pressed = ui.input(|i| i.modifiers.ctrl);
+                                    
+                                    if response.clicked() {
+                                        if ctrl_pressed {
+                                            // Se Ctrl estiver pressionado, alterne a seleção
+                                            self.toggle_video_selection(idx);
+                                        } else {
+                                            // Caso contrário, limpe a seleção e reproduza apenas este vídeo
+                                            if !is_selected {
+                                                self.selected_videos.clear();
+                                            }
+                                            self.play_video(idx);
+                                        }
                                     }
 
                                     // Título do vídeo com quebra de linha
                                     ui.set_max_width(thumbnail_width);
-                                    ui.label(&video.title);
+                                    ui.label(&title);
                                 });
 
                                 // Removido o espaçamento adicional entre itens
