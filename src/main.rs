@@ -213,7 +213,7 @@ impl App for M3UViewer {
         // Barra superior com menu e pesquisa
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
-                ui.menu_button("Arquivo", |ui| {
+                ui.menu_button("Opções", |ui| {
                     if ui.button("Abrir M3U...").clicked() {
                         if let Some(path) = rfd::FileDialog::new()
                             .add_filter("M3U Playlist", &["m3u", "m3u8"])
@@ -222,10 +222,6 @@ impl App for M3UViewer {
                             self.open_m3u_file(path);
                             ui.close_menu();
                         }
-                    }
-
-                    if ui.button("Sair").clicked() {
-                        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                     }
                 });
 
