@@ -1,6 +1,3 @@
-### concertar visualização de botão
-os botões "Reproduzir Selecionados" e "Limpar Seleção" no menu/botão "opções" estão tendo quebra de linha, pois o menu em si tem uma largura muito pequena, é necessário colocar o quanto for preciso para os botões caberem, de acordo com quantos caracteres tem os botões, sem precisar editar manualmente, durante o compilamento ou inicialização do programa para não pesar no desempenho ao usar o app.
-
 ### ajustar visualização da grade
 notei ao redimensionar a janela que a grade de videos é dinamica, isso é, ao diminuir o eixo X a grade se ajusta, isso é ótimo, no momento a grade não está usando toda a janela, quero faze-la ocupar tudo.
 

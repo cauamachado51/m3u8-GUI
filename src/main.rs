@@ -280,6 +280,8 @@ impl App for M3UViewer {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("Opções", |ui| {
+                    ui.set_min_width(150.0); // Definir largura mínima do menu, 1 = 1,33 pixels numa tela 1920x1080
+                    
                     if ui.button("Abrir M3U...").clicked() {
                         if let Some(path) = rfd::FileDialog::new()
                             .add_filter("M3U Playlist", &["m3u", "m3u8"])
