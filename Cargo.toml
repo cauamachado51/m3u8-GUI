@@ -1,5 +1,5 @@
 [package]
-name = "m3u8-gui"
+name = "m3u8-GUI"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,3 +12,14 @@ tokio = { version = "1", features = ["full"] }
 regex = "1.5.4"
 md5 = "0.7.0"
 rfd = "0.15.3"
+
+[profile.release]       # ITC = Impacto no tempo de compilação
+opt-level = 3           # Máxima otimização. (padrão no --release)
+lto = "fat"             # Otimização total na ligação. ITC: Alto. (não padrão)
+codegen-units = 1       # Mais otimizações, menos paralelismo. ITC: Moderado a Alto. (não padrão)
+panic = "abort"         # Aborta em pânico, reduzindo código de tratamento (não padrão)
+strip = true            # Remove símbolos de depuração, reduzindo o tamanho do binário. (não padrão)
+incremental = false     # ITC: Moderado. (padrão)
+debug = false           # (padrão)
+rpath = false           # (não padrão)
+split-debuginfo = "off" # (não padrão)

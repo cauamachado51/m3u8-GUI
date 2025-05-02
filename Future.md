@@ -1,8 +1,8 @@
-### ajustar visualização da grade
-notei ao redimensionar a janela que a grade de videos é dinamica, isso é, ao diminuir o eixo X a grade se ajusta, isso é ótimo, no momento a grade não está usando toda a janela, quero faze-la ocupar tudo.
-
 ### melhorar desempenho de inicialização
 quando inicializa ele verifica a existência de <id do video>.jpg na pasta cache_m3u, se não existir ele baixa, mas eu uso sempre o mesmo .m3u, então 99,9% das vezes não tem novas thumbnails para baixar, eu queria que a verficação fosse iniciada pelo botão "atualizar thumbnails", que ficaria no botão "opções" na barra superior. não tenho certeza, mas não descarto a possibilidade de talvez não melhorar o desempenho de inicialização por ainda precisar linkar todas as imagens na pasta cache_m3u na GUI.
+
+### modo lista
+quero adicionar o modo lista. faça o botão/menu "visualização" ao lado de "opções", dentro coloque "mudar para <lista/grade>". o modo lista é ter uma coluna de video, a imagem a esquerda e o titulo a direita.
 
 ### adicionar suporte a configurações.
 no botão "opções" adicionar o botão "configurações", que ao apertar cria uma janela para as configurações, a esquerda deve ter abas e a direita as configurações da aba aberta. as configurações são guardadas em config.json
@@ -44,3 +44,7 @@ ele deve me permitir adicionar multiplas playlists e tags, não deve obrigar a d
 }
 ```
 deve ter na Barra Superior ao lado do botão "opções" um botão "visualização", que abre uma janela de configuração própria, lá você pode selecionar qual playlist filtrar para só mostrar os videos dela, quais tags aparecem abaixo do titulo do video (valor incluso), também deve ter seleção de como é ordenado os videos, por ordem de inserção (é a atual, ordem em que processa o .m3u), ou por ordem alfabetica (titulo do video ou valor de X tag). também deve ter seleção de exibição em grade ou lista, na lista as thumbs ficam a esquerda e o nome do video e as tags a direita um abaixo do outro.
+
+### outros
+recurso de seleção aleatoria.
+verificar por que abre o terminal ao executar o programa.
