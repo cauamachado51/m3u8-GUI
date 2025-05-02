@@ -20,6 +20,8 @@ struct M3UViewer {
     filtered_videos: Vec<usize>, // Índices dos vídeos que correspondem à pesquisa atual
     pending_downloads: Vec<String>, // IDs dos vídeos que precisam ter thumbnails baixadas
     selected_videos: Vec<usize>,  // Índices dos vídeos selecionados pelo usuário
+    zoom_factor: f32,           // Fator de zoom para os thumbnails
+    grid_width_factor: f32,     // Fator de largura da grade
 }
 
 impl M3UViewer {
@@ -36,6 +38,8 @@ impl M3UViewer {
             filtered_videos: Vec::new(),
             pending_downloads: Vec::new(),
             selected_videos: Vec::new(),
+            zoom_factor: 1.0,           // Valor inicial do zoom
+            grid_width_factor: 0.9,     // Valor inicial da largura da grade (90%)
         }
     }
 
@@ -237,6 +241,29 @@ impl App for M3UViewer {
         // Carregar texturas para vídeos que ainda não têm
         self.load_textures(ctx);
 
+        // Processar eventos de scroll para zoom e ajuste de grade
+        ctx.input(|input| {
+            // Verificar se há eventos de scroll
+            let scroll_delta = input.raw_scroll_delta.y;
+            if scroll_delta != 0.0 {
+                let scroll_direction = scroll_delta.signum();
+                
+                // Ctrl+Scroll para zoom nos videos
+                if input.modifiers.ctrl {
+                    // Ajustar o fator de zoom (aumentar/diminuir em 5% por scroll)
+                    let zoom_change = 0.05 * scroll_direction;
+                    self.zoom_factor = (self.zoom_factor + zoom_change).clamp(0.5, 2.0);
+                }
+                
+                // Alt+Scroll para ajustar largura da grade
+                if input.modifiers.alt {
+                    // Ajustar o fator de largura da grade (aumentar/diminuir em 5% por scroll)
+                    let width_change = 0.05 * scroll_direction;
+                    self.grid_width_factor = (self.grid_width_factor + width_change).clamp(0.25, 1.0);
+                }
+            }
+        });
+
         // Iniciar downloads pendentes
         if !self.pending_downloads.is_empty() {
             let pending = self.pending_downloads.clone();
@@ -245,10 +272,7 @@ impl App for M3UViewer {
             let future = async move {
                 let client = reqwest::Client::new();
                 for (i, id) in pending_clone.iter().enumerate() {
-                    if i >= 50 {
-                        // Limitar a 50 downloads simultâneos
-                        break;
-                    }
+                    if i >= 50 { break; } // Limitar a 50 downloads simultâneos
 
                     let cache_path = format!("cache_m3u/{}.jpg", id);
                     let url = format!("https://img.youtube.com/vi/{}/mqdefault.jpg", id);
@@ -306,10 +330,16 @@ impl App for M3UViewer {
                 });
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.label("Pesquisar:");
                     if ui.text_edit_singleline(&mut self.search_query).changed() {
                         self.update_filtered_videos();
                     }
+                    ui.label("Pesquisar:");
+                    
+                    // Exibir informações sobre os controles com tooltips
+                    ui.label(format!("Zoom: {:.0}%", self.zoom_factor * 100.0))
+                        .on_hover_text("Ctrl+Scroll para ajustar o zoom dos videos");
+                    ui.label(format!("Largura: {:.0}%", self.grid_width_factor * 100.0))
+                        .on_hover_text("Alt+Scroll para ajustar a largura da grade");
                 });
             });
         });
@@ -318,7 +348,7 @@ impl App for M3UViewer {
         egui::CentralPanel::default().show(ctx, |ui| {
             if self.m3u_path.is_none() {
                 ui.centered_and_justified(|ui| {
-                    ui.label("Selecione um arquivo M3U/M3U8 no menu Arquivo");
+                    ui.label("Selecione um arquivo M3U/M3U8 no menu Opções");
                 });
                 return;
             }
@@ -331,25 +361,36 @@ impl App for M3UViewer {
 
                     // Exibir vídeos em grade
                     let available_width = ui.available_width();
-                    let thumbnail_width = 320.0;
-                    let thumbnail_height = 180.0;
-
-                    // Calcular quantos itens cabem por linha
-                    let items_per_row = (available_width / thumbnail_width).floor() as usize;
+                    
+                    // Calcular largura efetiva usando o fator de largura da grade
+                    let effective_width = available_width * self.grid_width_factor;
+                    
+                    // Calcular margem lateral
+                    let side_margin = (available_width - effective_width) / 2.0;
+                    
+                    // Aplicar o fator de zoom ao tamanho base do thumbnail
+                    let base_thumbnail_width = 320.0 * self.zoom_factor;
+                    let base_thumbnail_height = 180.0 * self.zoom_factor;
+                    
+                    // Calcular quantos itens cabem por linha usando a largura efetiva
+                    let items_per_row = (effective_width / base_thumbnail_width).floor() as usize;
                     let items_per_row = items_per_row.max(1);
-
-                    // Calcular largura total da linha
-                    let row_width = items_per_row as f32 * thumbnail_width;
-
-                    // Calcular margem para centralizar
-                    let margin = (available_width - row_width) / 2.0;
+                    
+                    // Calcular a largura ideal para cada thumbnail para ocupar toda a largura efetiva
+                    // Considerando o espaçamento entre itens (10.0 pixels)
+                    let spacing_total = (items_per_row - 1) as f32 * 10.0;
+                    let thumbnail_width = (effective_width - spacing_total) / items_per_row as f32;
+                    
+                    // Manter a proporção da altura
+                    let aspect_ratio = base_thumbnail_height / base_thumbnail_width;
+                    let thumbnail_height = thumbnail_width * aspect_ratio;
 
                     let mut i = 0;
                     while i < self.filtered_videos.len() {
                         ui.horizontal(|ui| {
                             // Adicionar margem à esquerda para centralizar
-                            ui.add_space(margin);
-
+                            ui.add_space(side_margin);
+                            
                             for j in 0..items_per_row {
                                 let idx = i + j;
                                 if idx >= self.filtered_videos.len() {
@@ -429,8 +470,6 @@ impl App for M3UViewer {
                                     ui.set_max_width(thumbnail_width);
                                     ui.label(&title);
                                 });
-
-                                // Removido o espaçamento adicional entre itens
                             }
                         });
 
