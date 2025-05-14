@@ -1,0 +1,30 @@
+name: Manual Release
+on:
+  workflow_dispatch: # Permite disparar o workflow manualmente na aba Actions
+    inputs:
+      version: # Campo para o usuário inserir a versão do release
+        description: 'nome da release'
+        required: true
+      commit: # Campo opcional para especificar o SHA do commit
+        description: 'Commit SHA (Deixe em branco para ser o mais recente da branch main)'
+        required: false
+
+permissions:
+  contents: write # Concede permissão para criar releases e modificar conteúdo
+
+jobs: # Define os trabalhos a serem executados
+  build-and-release: # Nome do job
+    runs-on: windows-latest # Executa no ambiente Windows mais recente
+    steps:
+      - uses: actions/checkout@v4 # Faz checkout do código do repositório
+        with:
+          ref: ${{ github.event.inputs.commit || 'main' }} # Usa o commit especificado ou a branch main
+      - name: Install Rust # Instala o Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Build # Compila o projeto com cargo build --release
+        run: cargo build --release
+      - name: Create Release # Cria o release no GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ github.event.inputs.version }} # Nomeia o release com a versão fornecida
+          files: target/release/m3u8-GUI.exe # Anexa o binário m3u8-GUI.exe ao release
