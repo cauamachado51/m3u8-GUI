@@ -1,0 +1,92 @@
+# Nome do workflow, exibido na aba Actions do GitHub
+name: Manual Release
+
+# Define os eventos que disparam o workflow
+on:
+  # Permite disparo manual pela interface do GitHub
+  workflow_dispatch:
+    # Entradas fornecidas pelo usuário ao executar o workflow
+    inputs:
+      # Versão do release, usada no nome do release
+      version:
+        # Descrição exibida no formulário de execução
+        description: 'Nome da release (ex.: 1.0.0)'
+        # Campo obrigatório
+        required: true
+      # Commit a ser compilado, opcional
+      commit:
+        # Descrição do campo, orienta o usuário
+        description: 'Commit SHA (deixe em branco para o último da main)'
+        # Não é obrigatório
+        required: false
+
+# Permissões necessárias para o workflow
+permissions:
+  # Permite criar releases e modificar conteúdo do repositório
+  contents: write
+
+# Define os trabalhos a serem executados
+jobs:
+  # Nome do job, único neste workflow
+  build-and-release:
+    # Executa no ambiente Windows mais recente
+    runs-on: windows-latest
+    # Lista de passos a serem executados
+    steps:
+      # Passo 1: Faz checkout do código do repositório
+      - uses: actions/checkout@v4
+        # Configurações do checkout
+        with:
+          # Usa o commit especificado ou a branch main
+          ref: ${{ github.event.inputs.commit || 'main' }}
+
+      # Passo 2: Instala o compilador Rust
+      - name: Install Rust
+        # Usa ação oficial para instalar Rust
+        uses: dtolnay/rust-toolchain@stable
+        # Sem configuração extra, usa versão estável
+
+      # Passo 3: Compila o projeto
+      - name: Build
+        # Executa cargo build --release, como no ambiente local
+        run: cargo build --release
+
+      # Passo 4: Cria o release no GitHub
+      - name: Create Release
+        # Usa ação para criar releases
+        uses: actions/create-release@v1
+        # ID para referenciar a saída deste passo
+        id: create_release
+        # Configurações do release
+        with:
+          # Associa o release ao commit especificado ou ao HEAD da main
+          commitish: ${{ github.event.inputs.commit || github.sha }}
+          # Define explicitamente que não há tag
+          tag_name: ''
+          # Nome do release, usa a versão fornecida
+          release_name: Release ${{ github.event.inputs.version }}
+          # Não cria release como rascunho
+          draft: false
+          # Não marca como prerelease
+          prerelease: false
+        # Token necessário para autenticação no GitHub
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Passo 5: Anexa o binário ao release
+      - name: Upload Release Asset
+        # Usa ação para fazer upload de arquivos
+        uses: actions/upload-release-asset@v1
+        # Configurações do upload
+        with:
+          # URL do release, obtida do passo anterior
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          # Caminho do binário gerado
+          asset_path: target/release/m3u8-GUI.exe
+          # Nome do arquivo no release
+          asset_name: m3u8-GUI.exe
+          # Tipo de conteúdo do arquivo (binário genérico)
+          asset_content_type: application/octet-stream
+        # Token para autenticação
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
