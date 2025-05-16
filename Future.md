@@ -47,4 +47,5 @@ deve ter na Barra Superior ao lado do botão "opções" um botão "visualizaçã
 
 ### outros
 recurso de seleção aleatoria.
-verificar por que abre o terminal ao executar o programa.
+configuração de lembrar o caminho do ultimo .m3u8, verficar existencia e carregar na inicialização do app.
+configuração de em qual pasta guardar as configurações.

@@ -1,3 +1,4 @@
+#![windows_subsystem = "windows"] // iniciar o programa sem abrir uma janela de terminal.
 use eframe::{egui, App, CreationContext, Frame};
 use egui::{Color32, Sense, TextureHandle, Vec2};
 use regex::Regex;
@@ -5,6 +6,8 @@ use std::fs::{self, File};
 use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt; // para usar api do windows. no momento serve para abrir arquivos sem abrir o terminal.
 
 // Estruturas para armazenar informações na RAM
 struct VideoEntry {
@@ -177,8 +180,10 @@ impl M3UViewer {
             // Abrir com o aplicativo padrão
             #[cfg(target_os = "windows")]
             {
-                Command::new("cmd")
-                    .args(&["/C", "start", "temp.m3u"])
+                const SW_HIDE: u32 = 0;
+                Command::new("rundll32")
+                    .args(&["url.dll,FileProtocolHandler", "temp.m3u"])
+                    .creation_flags(SW_HIDE)
                     .spawn()
                     .ok();
             }
@@ -210,8 +215,10 @@ impl M3UViewer {
                             // Abrir com o aplicativo padrão
                             #[cfg(target_os = "windows")]
                             {
-                                Command::new("cmd")
-                                    .args(&["/C", "start", "temp.m3u"])
+                                const SW_HIDE: u32 = 0;
+                                Command::new("rundll32")
+                                    .args(&["url.dll,FileProtocolHandler", "temp.m3u"])
+                                    .creation_flags(SW_HIDE)
                                     .spawn()
                                     .ok();
                             }
