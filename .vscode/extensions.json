@@ -1,0 +1,9 @@
+{
+    "recommendations": [
+        "rust-lang.rust-analyzer",
+        "fill-labs.dependi",
+        "vadimcn.vscode-lldb",
+		"pkief.material-icon-theme",
+		"tombi-toml.tombi"
+    ]
+}
