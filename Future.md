@@ -47,4 +47,3 @@ deve ter na Barra Superior ao lado do botão "opções" um botão "visualizaçã
 
 ### outros
 recurso de seleção aleatoria.
-verificar por que abre o terminal ao executar o programa.
