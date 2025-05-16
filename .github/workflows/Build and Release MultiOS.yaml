@@ -1,0 +1,62 @@
+name: Build and Release MultiOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_name:
+        description: 'Nome da release'
+        required: true
+      commit:
+        description: 'Commit SHA (opcional, default HEAD da main)'
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            binary: m3u8-GUI
+            renamed_binary: m3u8-GUI-Linux-x64
+            install_deps: echo "Não precisa de dependências para Linux"
+          - os: windows-latest
+            binary: m3u8-GUI.exe
+            renamed_binary: m3u8-GUI-Windows-x64.exe
+            install_deps: echo "Não precisa de dependências para Windows"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.commit || 'main' }}
+
+      - name: Install dependencies
+        run: ${{ matrix.install_deps }}
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Build project
+        run: cargo build --release
+
+      - name: Rename binary
+        run: mv target/release/${{ matrix.binary }} target/release/${{ matrix.renamed_binary }}
+        shell: bash
+
+      - name: Upload release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.release_name }}
+          files: |
+            target/release/${{ matrix.renamed_binary }}
+            criar m3u8 de playlist do YouTube.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
