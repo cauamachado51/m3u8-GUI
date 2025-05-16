@@ -1,3 +1,4 @@
+#![windows_subsystem = "windows"] // iniciar o programa sem abrir uma janela de terminal.
 use eframe::{egui, App, CreationContext, Frame};
 use egui::{Color32, Sense, TextureHandle, Vec2};
 use regex::Regex;
@@ -177,8 +178,8 @@ impl M3UViewer {
             // Abrir com o aplicativo padrão
             #[cfg(target_os = "windows")]
             {
-                Command::new("cmd")
-                    .args(&["/C", "start", "temp.m3u"])
+                Command::new("rundll32.exe")
+                    .args(&["url.dll,FileProtocolHandler", "temp.m3u"])
                     .spawn()
                     .ok();
             }
@@ -210,8 +211,8 @@ impl M3UViewer {
                             // Abrir com o aplicativo padrão
                             #[cfg(target_os = "windows")]
                             {
-                                Command::new("cmd")
-                                    .args(&["/C", "start", "temp.m3u"])
+                                Command::new("rundll32")
+                                    .args(&["url.dll,FileProtocolHandler", "temp.m3u"])
                                     .spawn()
                                     .ok();
                             }
