@@ -11,5 +11,5 @@ Meu aplicativo carrega toda a playlist de uma vez e nunca a descarrega.
 
 # Técnico
 - O aplicativo baixa miniaturas para a pasta cache_m3u, caso necessário. Ao clicar para abrir um video, ele cria um temp.m3u para abrir no app padrão.
-- Fiz usando IA até o v12, mas decidi parar um pouco para voltar a ler a documentação e aprender rust (quero programar sem IA), depois vou nas dependencias.
+- Fiz usando IA até o v13, mas decidi parar um pouco para voltar a ler a documentação e aprender rust (quero programar sem IA), depois vou nas dependencias.
 - Não faço ideia se o executavel do Linux funciona.
