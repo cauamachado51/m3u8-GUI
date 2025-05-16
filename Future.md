@@ -47,4 +47,6 @@ deve ter na Barra Superior ao lado do botão "opções" um botão "visualizaçã
 
 ### outros
 recurso de seleção aleatoria.
-verificar por que abre o terminal ao executar o programa.
+configuração de lembrar o caminho do ultimo .m3u8, verficar existencia e carregar na inicialização do app.
+configuração de em qual pasta guardar as configurações.
+embutir "criar m3u8 de playlist do YouTube.py" ou melhor .ps1 e .sh via [embutir scripts em rust](https://www.notion.so/cauamachado51/Rust-1dde1ce7aff68065a8a8f67190a4f4c8?source=copy_link#221e1ce7aff6807285a9e1cdc8335e44)
