@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt; // para usar api do windows. no momento serve para abrir arquivos sem abrir o terminal.
-mod generate_m3u8;
+mod gerar_m3u8;
 
 // Estruturas para armazenar informações na RAM
 struct VideoEntry {
