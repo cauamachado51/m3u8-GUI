@@ -1,18 +1,55 @@
-// Descrição: cria um m3u8 com nomes e links dos vídeos de uma playlist, você pode abrir o arquivo/playlist em PotPlayer e MPC-HC do K-lite. (VLC não)
-// Como usar:
-// 1. instale yt-dlp (ele é app solto): https://github.com/yt-dlp/yt-dlp
-// 2. instale Rust: https://rustup.rs/
-// 3. adicione ao path a pasta de yt-dlp.exe: no menu iniciar abra Editar as variáveis de ambiente do sistema, clique em váriaveis de ambiente..., em váriaveis do sistema clique em Path, adicione algo como E:\Program Files\apps soltos\
-// 4. compile e execute: cargo run
-
 use std::process::Command;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::Write;
+use powershell::{read_host, pause};
 
+// isso impede read_host `#![windows_subsystem = "windows"]` // iniciar o programa sem abrir uma janela de terminal.
+
+/// pergunta ao usuario uma URL de playlist do YouTube e cria um m3u8 com nomes e links dos vídeos.
+/// grava `last_playlist_url: <URL>` em config.json, ao dar enter sem digitar nada ele usa o ultimo. exemplo de m3u8:
+/// ```m3u8
+/// #EXTM3U
+/// #EXTINF:-1, Rap: Eu Sou Um Deus (Madara, Kira..........) // Purificando Almas // TK RAPS
+/// https://www.youtube.com/watch?v=9YOpBlxxAqs
+/// #EXTINF:-1, Rap do Escanor ( Nanatsu no Taizai ) | WLO | {Prod.MK Beats}
+/// https://www.youtube.com/watch?v=hnZkREIOkX4
+/// ```
+/// requer: yt-dlp no path https://github.com/yt-dlp/yt-dlp
 pub fn gerar_m3u8() {
-    let playlist_url = "https://youtube.com/playlist?list=PLNPlJgG3nx8IqxpMrCkkEJvAhZXVbFaH0&si=Dcp_ntl5Q-Cm9eaW";
+    println!("requer: yt-dlp no path https://github.com/yt-dlp/yt-dlp");
+    let mut playlist_url = read_host("Digite a URL da playlist (enter para usar o ultimo): ");
     let nome_arquivo = "playlist.m3u8";
-    
+
+    if playlist_url.is_empty() {
+        let content_configjson = fs::read_to_string("config.json").unwrap_or_default();
+        let parse_content_configjson = jzon::parse(&content_configjson).unwrap_or_else(|_| jzon::object! {});
+        playlist_url = parse_content_configjson["last_playlist_url"].as_str().unwrap_or("").to_string();
+    } else {
+        let save_config = jzon::object! {
+            "last_playlist_url": playlist_url.clone()
+        };
+        let _ = fs::write("config.json", jzon::stringify(save_config));
+    }
+
+    if playlist_url.is_empty() {
+        println!("Nenhuma URL fornecida e nenhuma URL salva encontrada.");
+        pause();
+        return;
+    }
+
+    gerar_m3u8_interno(&playlist_url, nome_arquivo);
+}
+
+/// cria um m3u8 com nomes e links dos vídeos de uma playlist do YouTube. exemplo:
+/// ```m3u8
+/// #EXTM3U
+/// #EXTINF:-1, Rap: Eu Sou Um Deus (Madara, Kira..........) // Purificando Almas // TK RAPS
+/// https://www.youtube.com/watch?v=9YOpBlxxAqs
+/// #EXTINF:-1, Rap do Escanor ( Nanatsu no Taizai ) | WLO | {Prod.MK Beats}
+/// https://www.youtube.com/watch?v=hnZkREIOkX4
+/// ```
+/// requer: yt-dlp no path https://github.com/yt-dlp/yt-dlp
+pub fn gerar_m3u8_interno(playlist_url: &str, nome_arquivo: &str) {
     let output = Command::new("yt-dlp")
         .args(&["--flat-playlist", "--print", "url", "--get-title", playlist_url])
         .output()

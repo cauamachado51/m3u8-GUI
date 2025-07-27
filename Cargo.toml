@@ -12,6 +12,8 @@ tokio = { version = "1", features = ["full"] }
 regex = "1.5.4"
 md5 = "0.7.0"
 rfd = "0.15.3"
+jzon = "0.12.5"
+powershell = {path = "../PowerShell-for-Rust/powershell"}
 
 [profile.release]       # ITC = Impacto no tempo de compilação
 opt-level = 3           # Máxima otimização. (padrão no --release)
