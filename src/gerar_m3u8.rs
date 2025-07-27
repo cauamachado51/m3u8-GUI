@@ -1,9 +1,7 @@
 use std::process::Command;
 use std::fs::{self, File};
 use std::io::Write;
-use powershell::{read_host, pause};
-
-// isso impede read_host `#![windows_subsystem = "windows"]` // iniciar o programa sem abrir uma janela de terminal.
+use powershell::{read_host, console_temporario};
 
 /// pergunta ao usuario uma URL de playlist do YouTube e cria um m3u8 com nomes e links dos vídeos.
 /// grava `last_playlist_url: <URL>` em config.json, ao dar enter sem digitar nada ele usa o ultimo. exemplo de m3u8:
@@ -16,6 +14,7 @@ use powershell::{read_host, pause};
 /// ```
 /// requer: yt-dlp no path https://github.com/yt-dlp/yt-dlp
 pub fn gerar_m3u8() {
+    let _console = console_temporario();
     println!("requer: yt-dlp no path https://github.com/yt-dlp/yt-dlp");
     let mut playlist_url = read_host("Digite a URL da playlist (enter para usar o ultimo): ");
     let nome_arquivo = "playlist.m3u8";
@@ -32,8 +31,7 @@ pub fn gerar_m3u8() {
     }
 
     if playlist_url.is_empty() {
-        println!("Nenhuma URL fornecida e nenhuma URL salva encontrada.");
-        pause();
+        read_host("Nenhuma URL fornecida e nenhuma URL salva encontrada. aperte enter.");
         return;
     }
 

@@ -9,6 +9,7 @@ use std::process::Command;
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt; // para usar api do windows. no momento serve para abrir arquivos sem abrir o terminal.
 mod gerar_m3u8;
+use gerar_m3u8::gerar_m3u8;
 
 // Estruturas para armazenar informações na RAM
 struct VideoEntry {
@@ -322,6 +323,11 @@ impl App for M3UViewer {
                             self.open_m3u_file(path);
                             ui.close_menu();
                         }
+                    }
+
+                    if ui.button("gerar m3u8...").clicked() {
+                        gerar_m3u8();
+                        ui.close_menu();
                     }
                     
                     if !self.selected_videos.is_empty() {
