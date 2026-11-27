@@ -12,7 +12,7 @@ on:
 
 permissions:
   contents: write
-  
+
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
@@ -38,5 +38,6 @@ jobs:
           files: |
             target/release/m3u8-GUI
             criar m3u8 de playlist do YouTube.py
+            criar m3u8 de playlist do YouTube.ps1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
