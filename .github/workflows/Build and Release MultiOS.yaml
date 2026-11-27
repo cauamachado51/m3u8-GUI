@@ -58,5 +58,6 @@ jobs:
           files: |
             target/release/${{ matrix.renamed_binary }}
             criar m3u8 de playlist do YouTube.py
+            criar m3u8 de playlist do YouTube.ps1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

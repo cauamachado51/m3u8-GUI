@@ -23,6 +23,28 @@ struct M3UViewer {
 	selected_videos: Vec<usize>,  // Índices dos vídeos selecionados pelo usuário
 	zoom_factor: f32,           // Fator de zoom para os thumbnails
 	grid_width_factor: f32,     // Fator de largura da grade
+	random_order: bool,         // true = ordem aleatória, false = ordem original do M3U
+	display_order: Vec<usize>,  // Ordem de exibição (índices de `videos`); `videos` nunca é reordenado
+}
+
+// Embaralha (Fisher-Yates) usando só a biblioteca padrão:
+// semente aleatória do RandomState + gerador xorshift64*.
+fn shuffle_indices(v: &mut [usize]) {
+	use std::collections::hash_map::RandomState;
+	use std::hash::{BuildHasher, Hasher};
+
+	let mut state = RandomState::new().build_hasher().finish() | 1; // nunca zero
+	let mut next = || {
+		state ^= state >> 12;
+		state ^= state << 25;
+		state ^= state >> 27;
+		state.wrapping_mul(0x2545_F491_4F6C_DD1D)
+	};
+
+	for i in (1..v.len()).rev() {
+		let j = ((next() as u128 * (i as u128 + 1)) >> 64) as usize;
+		v.swap(i, j);
+	}
 }
 
 impl M3UViewer {
@@ -41,6 +63,8 @@ impl M3UViewer {
 			selected_videos: Vec::new(),
 			zoom_factor: 1.0,           // Valor inicial do zoom
 			grid_width_factor: 0.9,     // Valor inicial da largura da grade (90%)
+			random_order: false,        // Começa na ordem original do M3U
+			display_order: Vec::new(),
 		}
 	}
 
@@ -103,7 +127,23 @@ impl M3UViewer {
 			}
 		}
 
-		// Atualizar lista filtrada
+		// Reconstruir a ordem de exibição (M3U ou aleatória) e a lista filtrada
+		self.rebuild_display_order();
+		self.update_filtered_videos();
+	}
+
+	// Recria `display_order`: ordem do M3U, ou embaralhada se `random_order` estiver ativo
+	fn rebuild_display_order(&mut self) {
+		self.display_order = (0..self.videos.len()).collect();
+		if self.random_order {
+			shuffle_indices(&mut self.display_order);
+		}
+	}
+
+	// Alterna entre ordem do M3U e ordem aleatória
+	fn toggle_random_order(&mut self) {
+		self.random_order = !self.random_order;
+		self.rebuild_display_order();
 		self.update_filtered_videos();
 	}
 
@@ -112,7 +152,8 @@ impl M3UViewer {
 		self.filtered_videos.clear();
 
 		let query = self.search_query.to_lowercase();
-		for (i, video) in self.videos.iter().enumerate() {
+		for &i in &self.display_order {
+			let video = &self.videos[i];
 			if query.is_empty() || video.title.to_lowercase().contains(&query) {
 				self.filtered_videos.push(i);
 			}
@@ -238,14 +279,25 @@ impl M3UViewer {
 }
 
 impl App for M3UViewer {
-	fn update(&mut self, ctx: &egui::Context, _frame: &mut Frame) {
+	fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut Frame) {
+		// No egui 0.37 o App recebe o `Ui` raiz; o Context vem dele (clone é barato, é um Arc)
+		let ctx = ui.ctx().clone();
+
 		// Carregar texturas para vídeos que ainda não têm
-		self.load_textures(ctx);
+		self.load_textures(&ctx);
 
 		// Processar eventos de scroll para zoom e ajuste de grade
 		ctx.input(|input| {
 			// Verificar se há eventos de scroll
-			let scroll_delta = input.raw_scroll_delta.y;
+			// `raw_scroll_delta` foi removido; somamos os eventos brutos da roda (delta.y)
+			let scroll_delta: f32 = input
+				.events
+				.iter()
+				.filter_map(|e| match e {
+					egui::Event::MouseWheel { delta, .. } => Some(delta.y),
+					_ => None,
+				})
+				.sum();
 			if scroll_delta != 0.0 {
 				let scroll_direction = scroll_delta.signum();
 
@@ -302,8 +354,8 @@ impl App for M3UViewer {
 		}
 
 		// Barra superior com menu e pesquisa
-		egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-			egui::menu::bar(ui, |ui| {
+		egui::Panel::top("top_panel").show(ui, |ui| {
+			egui::MenuBar::new().ui(ui, |ui| {
 				ui.menu_button("Opções", |ui| {
 					ui.set_min_width(150.0); // Definir largura mínima do menu, 1 = 1,33 pixels numa tela 1920x1080
 
@@ -313,22 +365,32 @@ impl App for M3UViewer {
 							.pick_file()
 						{
 							self.open_m3u_file(path);
-							ui.close_menu();
+							ui.close();
 						}
 					}
 
 					if !self.selected_videos.is_empty() {
 						if ui.button("Reproduzir Selecionados").clicked() {
 							self.play_selected_videos();
-							ui.close_menu();
+							ui.close();
 						}
 
 						if ui.button("Limpar Seleção").clicked() {
 							self.selected_videos.clear();
-							ui.close_menu();
+							ui.close();
 						}
 					}
 				});
+
+				// Botão que alterna a ordenação: ordem do M3U <-> aleatória
+				let order_label = if self.random_order { "Ordem: aleatória" } else { "Ordem: M3U" };
+				if ui
+					.button(order_label)
+					.on_hover_text("Alterna entre a ordem do arquivo M3U e a ordem aleatória")
+					.clicked()
+				{
+					self.toggle_random_order();
+				}
 
 				ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
 					if ui.text_edit_singleline(&mut self.search_query).changed() {
@@ -346,7 +408,7 @@ impl App for M3UViewer {
 		});
 
 		// Área principal com a lista de vídeos
-		egui::CentralPanel::default().show(ctx, |ui| {
+		egui::CentralPanel::default().show(ui, |ui| {
 			if self.m3u_path.is_none() {
 				ui.centered_and_justified(|ui| {
 					ui.label("Selecione um arquivo M3U/M3U8 no menu Opções");
@@ -449,7 +511,7 @@ impl App for M3UViewer {
 									}
 
 									// Detectar clique na thumbnail
-									let response = ui.interact(rect, ui.id().with(idx), Sense::click());
+									let response = ui.interact(rect, ui.scope_id().with(idx), Sense::click());
 
 									// Verificar se Ctrl está pressionado
 									let ctrl_pressed = ui.input(|i| i.modifiers.ctrl);
